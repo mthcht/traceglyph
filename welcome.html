@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  welcome.html - TraceGlyph by mthcht
+  ============================================================================
+
+  WELCOME / ABOUT PAGE - Shown automatically on first install via
+  chrome.runtime.onInstalled. Also accessible from the extension's
+  options page.
+
+  CONTENT:
+    - Extension name, version badge, compatibility badge (Chrome/Edge/Brave).
+    - Full description of all capabilities with icon grid cards:
+      * Fingerprint detection (40+ API hooks)
+      * Network intelligence (IP resolution, redirect chains, trackers)
+      * Phishing detection (47 rules)
+      * Technology detection (120+ technologies)
+      * MITRE ATT&CK mapping (26 techniques)
+      * IOC export (10 categories)
+      * Ghost mode (block fingerprinting)
+      * Spoof mode (randomize fingerprinting)
+      * Page IOC extractor (14 IOC types)
+      * Tracking pixel decoder (35+ networks)
+    - Self-filtering explanation (how the extension avoids detecting itself).
+    - Pin-to-toolbar instructions (Chrome and Edge URLs).
+    - Privacy statement (100% local processing, no telemetry).
+
+  STYLING:
+    - Self-contained CSS (no external stylesheets).
+    - Dark theme, gradient accents, responsive grid layout.
+    - Animated gradient text for the title.
+
+  JAVASCRIPT:
+    - Auto-detects browser (Chrome/Edge/Brave) to show correct
+      extensions:// URL in the pin instructions.
+  ============================================================================
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TraceGlyph - About</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#f8f9fb;color:#1a1d26;font-family:'Inter',sans-serif;min-height:100vh;display:flex;justify-content:center;padding:48px 20px 80px}
+.wrap{max-width:680px;width:100%}
+.hero{text-align:center;margin-bottom:48px}
+.logo-i{width:64px;height:64px;background:linear-gradient(135deg,#2563eb,#7c3aed);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;font-family:'JetBrains Mono',monospace;margin-bottom:16px}
+h1{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
+.tagline{font-size:14px;color:#6b7280;margin-bottom:12px}
+.badges{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.badge{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 12px;border-radius:6px;border:1px solid #d1d5db;background:#fff;color:#4b5563}
+.badge.blue{border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}
+.badge.purple{border-color:#ddd6fe;background:#f5f3ff;color:#6d28d9}
+.badge.green{border-color:#bbf7d0;background:#f0fdf4;color:#15803d}
+.links{display:flex;justify-content:center;gap:12px;margin-top:16px}
+.links a{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#2563eb;text-decoration:none;padding:8px 16px;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;transition:all .15s}
+.links a:hover{background:#2563eb;color:#fff;border-color:#2563eb}
+.links a svg{width:14px;height:14px;fill:currentColor}
+
+h2{font-size:18px;font-weight:700;margin:40px 0 12px;padding-bottom:8px;border-bottom:2px solid #e5e7eb;letter-spacing:-.3px}
+h3{font-size:14px;font-weight:600;margin:20px 0 8px;color:#1a1d26}
+p{font-size:13.5px;color:#4b5563;line-height:1.75;margin-bottom:12px}
+ul{padding-left:20px;margin-bottom:16px}
+li{font-size:13.5px;color:#4b5563;line-height:1.75;margin-bottom:4px}
+li strong{color:#1a1d26;font-weight:600}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:#f0f1f5;padding:2px 6px;border-radius:4px;color:#7c3aed}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.gcard{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.gcard-icon{font-size:22px;margin-bottom:8px}
+.gcard h4{font-size:13px;font-weight:700;margin-bottom:4px;color:#1a1d26}
+.gcard p{font-size:12px;color:#6b7280;margin:0;line-height:1.5}
+.gcard .count{font-family:'JetBrains Mono',monospace;font-size:11px;color:#2563eb;margin-top:6px}
+table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:12.5px}
+th{text-align:left;padding:8px 10px;background:#f0f1f5;border:1px solid #e5e7eb;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.3px;color:#4b5563}
+td{padding:7px 10px;border:1px solid #e5e7eb;color:#4b5563;vertical-align:top}
+td:first-child{font-weight:500;color:#1a1d26;white-space:nowrap}
+tr:nth-child(even){background:#fafbfc}
+.install{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px 20px;margin:20px 0}
+.install h3{margin-top:0;color:#1d4ed8}
+.install ol{padding-left:18px}
+.install li{color:#1e40af;font-size:13px;line-height:1.8}
+.ready{display:flex;align-items:center;gap:8px;padding:12px 20px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#15803d;margin:24px 0}
+.ready .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.footer{text-align:center;font-size:11px;color:#9ca3af;margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb}
+.footer a{color:#6b7280;text-decoration:none}
+.footer a:hover{color:#2563eb}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="logo-i">TG</div>
+  <h1>TraceGlyph</h1>
+  <p class="tagline">Website security analyzer for investigators and blue teams</p>
+  <div class="badges">
+    <span class="badge blue">Open Source</span>
+    <span class="badge purple">Manifest V3</span>
+    <span class="badge green">Chrome · Edge · Brave</span>
+    <span class="badge">v1.0.0</span>
+  </div>
+  <div class="links">
+    <a href="https://github.com/mthcht/traceglyph" target="_blank"><svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+    <a href="https://github.com/mthcht/traceglyph/issues/new" target="_blank">Report Issue</a>
+  </div>
+</div>
+
+<!-- WHAT IS TRACEGLYPH -->
+<h2>What is TraceGlyph?</h2>
+<p>TraceGlyph is a free, open-source browser extension that performs real-time security analysis on every website you visit. It acts as a passive security toolkit running in your browser - detecting fingerprinting attempts, analyzing network behavior, identifying phishing indicators, extracting IOCs, and mapping findings to the MITRE ATT&CK framework.</p>
+<p>Unlike blockers or privacy tools, TraceGlyph does not modify page behavior. It silently observes and records - giving you a forensic-grade snapshot of what every website is actually doing behind the scenes.</p>
+<p>Built by <a href="https://github.com/mthcht" target="_blank">mthcht</a> for SOC analysts, threat hunters, incident responders, penetration testers, and anyone who wants to understand what websites are doing to their browser.</p>
+
+<!-- CAPABILITIES GRID -->
+<h2>Capabilities</h2>
+<div class="grid">
+  <div class="gcard"><div class="gcard-icon">🔍</div><h4>Fingerprint Detection</h4><p>Intercepts 40+ browser API hooks in real time: Canvas, WebGL, WebGPU, Audio, Font, WebRTC, Battery, Media Devices, Screen, Navigator, Geolocation, Speech Synthesis, Gamepad, and behavioral biometrics.</p><div class="count">40+ API hooks · 758 lines</div></div>
+  <div class="gcard"><div class="gcard-icon">🎣</div><h4>Phishing Analysis</h4><p>47 phishing detection rules across 7 categories: credential harvesting forms, brand impersonation (30+ brands), anti-analysis/DevTools evasion, social engineering urgency cues, exfiltration channels (Telegram/Discord bots), and suspicious page structure.</p><div class="count">47 rules · 7 categories</div></div>
+  <div class="gcard"><div class="gcard-icon">🌐</div><h4>Network Intelligence</h4><p>Tracks every domain contacted with resolved IPs, redirect chains with status codes, third-party script identification (60+ known trackers), request waterfall, and resource statistics (HTTPS percentage, type breakdown).</p><div class="count">60+ tracker signatures</div></div>
+  <div class="gcard"><div class="gcard-icon">🛡️</div><h4>Security Audit</h4><p>Audits 12+ HTTP security headers (CSP, HSTS, X-Frame-Options, Referrer-Policy, COOP/COEP), cookie flags (Secure, HttpOnly, SameSite), form risk assessment, and iframe analysis.</p><div class="count">12+ headers checked</div></div>
+  <div class="gcard"><div class="gcard-icon">🔬</div><h4>JS Obfuscation Detection</h4><p>Identifies 12 obfuscation patterns: eval packers, Base64+XOR combos (Whisper 2FA/BlackForce signatures), hex/unicode encoding, Function constructor abuse, document.write(unescape()), and string array rotation.</p><div class="count">12 obfuscation patterns</div></div>
+  <div class="gcard"><div class="gcard-icon">🧬</div><h4>Technology Detection</h4><p>Wappalyzer-class detection via 3 layers: DOM patterns + window globals + URL/header matching. Identifies 120+ technologies across 25+ categories (CMS, frameworks, analytics, session replay, CDN, hosting, payment).</p><div class="count">120+ technologies</div></div>
+  <div class="gcard"><div class="gcard-icon">⚔️</div><h4>MITRE ATT&CK Mapping</h4><p>Every detection category maps to ATT&CK technique IDs: T1082 System Info Discovery, T1566 Phishing, T1059.007 JavaScript, T1496 Resource Hijacking, T1115 Clipboard Data, T1027 Obfuscated Files, and 20+ more.</p><div class="count">26 technique mappings</div></div>
+  <div class="gcard"><div class="gcard-icon">📋</div><h4>IOC Export</h4><p>One-click export of domains, IPs, domain→IP map, redirect chains, tracker URLs, suspicious domains, script SHA-256 hashes, network anomalies, and critical detections. Copy Report generates a structured incident summary.</p><div class="count">10 IOC categories</div></div>
+  <div class="gcard"><div class="gcard-icon">👻</div><h4>Ghost Mode</h4><p>Block all fingerprinting by returning generic values. Canvas returns blank data, WebGL hides GPU info, WebRTC is fully blocked, navigator returns standard profiles. Enable per-site or globally.</p><div class="count">12 API categories blocked</div></div>
+  <div class="gcard"><div class="gcard-icon">🎭</div><h4>Spoof Mode</h4><p>Randomize fingerprint responses with realistic fake values. Each page load gets a consistent but unique fake profile from curated pools of real device data. Shows "Real → Fake" comparisons.</p><div class="count">10 spoof pools · session-consistent</div></div>
+  <div class="gcard"><div class="gcard-icon">🔎</div><h4>Page IOC Extractor</h4><p>Automatically extracts IOCs from visible page text - perfect for reading threat reports and advisories. Finds IPs, domains, URLs, file hashes (MD5/SHA1/SHA256), CVE IDs, MITRE ATT&CK IDs, emails, suspicious filenames, registry keys, and crypto wallet addresses. Handles defanged indicators (hxxp, [.], [at]).</p><div class="count">14 IOC types · auto-refanging</div></div>
+  <div class="gcard"><div class="gcard-icon">📡</div><h4>Tracking Pixel Decoder</h4><p>Detects hidden tracking pixels and beacons (1x1 images, invisible img tags), decodes their URL parameters, and reveals exactly what data each pixel transmits about you. Identifies 35+ tracking networks (Meta, Google, LinkedIn, TikTok, Criteo, Adobe, etc.) and classifies leaked data into categories: user ID, session, page info, device, timing, geolocation, revenue, and consent signals.</p><div class="count">35+ networks · 9 data categories</div></div>
+</div>
+
+<!-- DETECTION DETAILS -->
+<h2>Detection Categories</h2>
+<table>
+  <tr><th>Category</th><th>What it detects</th><th>ATT&CK</th></tr>
+  <tr><td>Canvas Fingerprint</td><td>toDataURL, toBlob, getImageData, readPixels on canvas elements</td><td>T1082</td></tr>
+  <tr><td>WebGL Fingerprint</td><td>getParameter (VENDOR/RENDERER), debug_renderer_info, getSupportedExtensions</td><td>T1082</td></tr>
+  <tr><td>WebGPU Fingerprint</td><td>navigator.gpu.requestAdapter() - GPU architecture, features, limits</td><td>T1082</td></tr>
+  <tr><td>Audio Fingerprint</td><td>Oscillator, Analyser, DynamicsCompressor, OfflineAudioContext</td><td>T1082</td></tr>
+  <tr><td>Font Enumeration</td><td>Rapid measureText() calls, document.fonts.check() probing</td><td>T1082</td></tr>
+  <tr><td>WebRTC Leak</td><td>RTCPeerConnection creation - local/public IP exposure</td><td>T1016</td></tr>
+  <tr><td>Navigator Probing</td><td>22 navigator properties + behavioral biometrics (mouse/keyboard/scroll tracking)</td><td>T1082</td></tr>
+  <tr><td>Phishing Indicator</td><td>Cross-origin login forms, brand impersonation, anti-debug, urgency cues, credential exfil</td><td>T1566</td></tr>
+  <tr><td>JS Obfuscation</td><td>Eval packers, Base64+XOR, hex encoding, string rotation, cache-busting hashes</td><td>T1027</td></tr>
+  <tr><td>Suspicious URL</td><td>Raw IPs, punycode homographs, brand keywords in non-brand domains, phishing TLDs</td><td>T1036</td></tr>
+  <tr><td>Dynamic Code Exec</td><td>eval(), setTimeout(string), setInterval(string)</td><td>T1059</td></tr>
+  <tr><td>Data Exfiltration</td><td>Large POST bodies, sendBeacon, fetch/XHR to third parties</td><td>T1041</td></tr>
+  <tr><td>Crypto/Mining</td><td>WebAssembly instantiation, crypto.subtle.digest volume, SharedArrayBuffer</td><td>T1496</td></tr>
+  <tr><td>Network Anomaly</td><td>Unusual ports, POST to raw IPs, suspicious file extensions, base64 URL params</td><td>T1071</td></tr>
+  <tr><td>Clipboard Access</td><td>readText(), read(), writeText() on navigator.clipboard</td><td>T1115</td></tr>
+  <tr><td>Storage Access</td><td>localStorage.setItem, indexedDB.open, sessionStorage writes</td><td>T1005</td></tr>
+  <tr><td>Page Integrity</td><td>SHA-256 hash of full DOM content for change detection</td><td>T1565</td></tr>
+</table>
+
+<!-- DATA COLLECTED -->
+<h2>Data Collected (urlscan.io-equivalent)</h2>
+<p>TraceGlyph captures the same categories of data as urlscan.io scans, but in real time from your browser:</p>
+<ul>
+  <li><strong>Requests</strong> - all HTTP transactions with method, URL, type, IP, status code</li>
+  <li><strong>Cookies</strong> - name, value, size, tracking classification</li>
+  <li><strong>Console output</strong> - log/warn/error/debug messages from page scripts</li>
+  <li><strong>Page links</strong> - all &lt;a href&gt; elements with text and external flag</li>
+  <li><strong>JS globals</strong> - non-standard window properties with type information</li>
+  <li><strong>Page timing</strong> - DNS, TLS, TTFB, DOM loaded, transfer size, protocol</li>
+  <li><strong>Technologies</strong> - Wappalyzer-class detection across DOM, globals, headers, and URLs</li>
+  <li><strong>Script hashes</strong> - SHA-256 of inline script content and external script URLs</li>
+  <li><strong>Security headers</strong> - 12+ response headers audited for presence and strength</li>
+  <li><strong>Redirect chains</strong> - full chain with IPs and status codes</li>
+  <li><strong>Domain→IP map</strong> - every hostname resolved to its IP address</li>
+</ul>
+
+<!-- SCORING -->
+<h2>Threat Scoring</h2>
+<p>TraceGlyph computes a 0–100 threat score with category-capped scoring to avoid false inflation:</p>
+<table>
+  <tr><th>Category</th><th>Max</th><th>What contributes</th></tr>
+  <tr><td>Fingerprinting</td><td>35</td><td>Canvas, WebGL, Audio, Font, WebRTC, Battery - bonus at 3+ types combined</td></tr>
+  <tr><td>Tracking</td><td>20</td><td>Known trackers (1.5 pts each), tracking pixels, session replay tools</td></tr>
+  <tr><td>Behavior</td><td>20</td><td>eval/dynamic code, large exfiltration, WebSocket, cryptomining, clipboard read</td></tr>
+  <tr><td>Phishing</td><td>15</td><td>Phishing indicators, JS obfuscation, suspicious URL patterns</td></tr>
+  <tr><td>Security</td><td>12</td><td>Missing CSP/HSTS/X-Content-Type-Options, weak headers, tech disclosure</td></tr>
+  <tr><td>Infrastructure</td><td>10</td><td>Suspicious TLDs, DGA-like domains, known malware domains, excess redirects</td></tr>
+  <tr><td>Anomalies</td><td>8</td><td>Network anomalies: unusual ports, POST to raw IP, suspicious file types</td></tr>
+  <tr><td>Forms</td><td>10</td><td>Critical-risk forms (cross-origin + password), hidden cross-origin iframes</td></tr>
+  <tr><td>Cookies</td><td>3</td><td>Tracking cookies (0.5 pts each)</td></tr>
+</table>
+
+<!-- SELF-FILTERING -->
+<h2>Self-Filtering</h2>
+<p>TraceGlyph excludes its own activity from analysis results. The extension's own script loading, API calls, and DOM modifications are filtered out at every level:</p>
+<ul>
+  <li>Injected hooks check the call stack - if the caller frame originates from <code>chrome-extension://</code>, the detection is silently dropped</li>
+  <li>Network listeners skip all <code>chrome-extension://</code> and <code>moz-extension://</code> URLs</li>
+  <li>DOM MutationObserver ignores script elements with extension-origin <code>src</code></li>
+  <li>fetch/XHR hooks skip extension URLs from exfiltration tracking</li>
+</ul>
+
+<!-- INSTALL -->
+<div class="install">
+  <h3>Pin to your toolbar</h3>
+  <ol>
+    <li>Open your extensions page: <span id="extUrl" style="font-family:'JetBrains Mono',monospace;color:#2563eb;cursor:pointer">chrome://extensions</span> (or <code>edge://extensions</code> for Edge)</li>
+    <li>Click the puzzle icon in the top-right corner of your browser</li>
+    <li>Find <strong>TraceGlyph by mthcht</strong> and click the pin icon</li>
+    <li>The shield appears with a live badge showing detection count and threat color</li>
+  </ol>
+</div>
+
+<!-- PRIVACY -->
+<h2>Privacy</h2>
+<p>TraceGlyph processes everything locally in your browser. No data is ever transmitted to any external server. No analytics, no telemetry, no cloud processing. All analysis happens on-device using browser extension APIs (webRequest, webNavigation, content scripts) available in Chrome, Edge, and Brave. The extension requires broad host permissions (<code>&lt;all_urls&gt;</code>) solely to monitor network requests across all sites - this data never leaves your machine.</p>
+
+<div class="ready"><div class="dot"></div> Extension is active - navigate to any site to start analyzing</div>
+
+<div class="footer">
+  <p>TraceGlyph by <a href="https://github.com/mthcht" target="_blank">mthcht</a> · <a href="https://github.com/mthcht/traceglyph" target="_blank">Source code</a> · <a href="https://github.com/mthcht/traceglyph/issues" target="_blank">Issues</a> · MIT License</p>
+</div>
+</div>
+
+<script>
+(function() {
+  var ua = navigator.userAgent || '';
+  var extUrl = 'chrome://extensions';
+  if (ua.indexOf('Edg/') !== -1) extUrl = 'edge://extensions';
+  else if (navigator.brave && typeof navigator.brave.isBrave === 'function') extUrl = 'brave://extensions';
+  else if (ua.indexOf('OPR/') !== -1) extUrl = 'opera://extensions';
+  else if (ua.indexOf('Vivaldi/') !== -1) extUrl = 'vivaldi://extensions';
+  var el = document.getElementById('extUrl');
+  el.textContent = extUrl;
+  el.addEventListener('click', function() { try { chrome.tabs.create({ url: extUrl }); } catch(e) {} });
+})();
+</script>
+</body>
+</html>
