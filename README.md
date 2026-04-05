@@ -1,6 +1,15 @@
 # TraceGlyph
 
-**Website security analyzer**
+<table>
+  <tr>
+    <td valign="middle">
+      <img src="https://github.com/user-attachments/assets/60f27fe4-1a19-46dc-80c0-151d89352581" alt="TraceGlyph icon" width="152" />
+    </td>
+    <td valign="middle">
+      <strong>Website security analyzer</strong>
+    </td>
+  </tr>
+</table>
 
 TraceGlyph is a free, open-source Chrome/Edge/Brave extension that performs real-time security analysis on every website you visit. It detects browser fingerprinting, identifies phishing indicators, spots JavaScript obfuscation, audits security headers, maps findings to MITRE ATT&CK techniques, and exports IOCs - all without sending any data externally.
 
