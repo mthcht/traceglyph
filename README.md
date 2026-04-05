@@ -6,6 +6,14 @@ TraceGlyph is a free, open-source Chrome/Edge/Brave extension that performs real
 
 > Think of it as urlscan.io + Wappalyzer + a fingerprint detector, running live in your browser.
 
+<img width="652" height="587" alt="Capture d&#39;écran 2026-04-05 235307" src="https://github.com/user-attachments/assets/f5db7249-4be2-48f3-a596-f05ed78c777b" />
+<img width="652" height="526" alt="Capture d&#39;écran 2026-04-05 235425" src="https://github.com/user-attachments/assets/0594b29a-19e5-49e8-a487-92624e2e1989" />
+<img width="656" height="522" alt="Capture d&#39;écran 2026-04-05 235442" src="https://github.com/user-attachments/assets/2a3d4cda-0b0a-4723-970b-dbe779b8ef14" />
+<img width="656" height="589" alt="Capture d&#39;écran 2026-04-06 000525" src="https://github.com/user-attachments/assets/3db8c5d1-44fb-471a-9891-4031473c7f92" />
+<img width="627" height="520" alt="Capture d&#39;écran 2026-04-06 000538" src="https://github.com/user-attachments/assets/8cf7213e-8e4b-438a-a8a7-4bd505f29526" />
+<img width="636" height="597" alt="Capture d&#39;écran 2026-04-06 000607" src="https://github.com/user-attachments/assets/f4ff7d93-be2e-4754-b346-9e2433b794d7" />
+
+
 ## Features
 
 ### Fingerprint Detection - 40+ API hooks
