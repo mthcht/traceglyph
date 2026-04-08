@@ -18,8 +18,11 @@
 //   - "ghost" (block): Hooks return GENERIC/DEFAULT values to make the
 //     browser look identical to every other browser. Goal: untrackability.
 //   - "spoof" (randomize): Hooks return FAKE but REALISTIC values from
-//     curated pools. Values stay consistent within a page load (deterministic
-//     seed). Goal: each session looks like a different real device.
+//     curated pools. Values are domain-seeded (deterministic PRNG from
+//     hostname) so the same site always sees the same spoofed profile.
+//     Device profiles ensure cross-property consistency (platform, UA,
+//     GPU, cores, screen all match). Goal: each site sees a different
+//     but internally-coherent device.
 //
 // SELF-FILTERING:
 //   - isSelfTriggered() checks the call stack for chrome-extension:// frames.
@@ -35,20 +38,21 @@
 //     platforms), and last-word fallback for new TLDs (.microsoft, etc.).
 //   - Same-org requests are NOT flagged as data exfiltration.
 //
-// HOOKED APIs (40+ vectors):
+// HOOKED APIs (50+ vectors):
 //
-//   NAVIGATOR PROBING (25 properties):
+//   NAVIGATOR PROBING (25+ properties):
 //     platform, vendor, language, languages, hardwareConcurrency, deviceMemory,
 //     maxTouchPoints, webdriver, plugins, mimeTypes, userAgent, cookieEnabled,
 //     pdfViewerEnabled, connection, gpu, keyboard, hid, usb, serial, bluetooth,
 //     doNotTrack, oscpu, appVersion, appCodeName, product.
+//     NavigatorUAData.getHighEntropyValues() (Client Hints API).
 //     Ghost: returns generic Win32/Google Inc./en-US/4 cores/8GB profile.
-//     Spoof: picks from pools of 4 UAs, 9 languages, 7 core counts, etc.
+//     Spoof: uses consistent device profiles (platform+UA+GPU+cores match).
 //
 //   CANVAS FINGERPRINT (3 methods):
 //     toDataURL, toBlob, getImageData.
-//     Ghost: returns blank canvas / zeroed pixel data.
-//     Spoof: injects invisible noise pixels before read, randomizing hash.
+//     Ghost: applies domain-seeded deterministic noise (stable across visits).
+//     Spoof: injects deterministic noise pixels before read.
 //
 //   WEBGL FINGERPRINT (4 methods):
 //     getParameter (VENDOR, RENDERER, VERSION, SHADING_LANGUAGE_VERSION,
@@ -63,12 +67,14 @@
 //     navigator.gpu.requestAdapter() - logs adapter vendor, architecture,
 //     device, features count. Ghost: returns null. Spoof: logs real values.
 //
-//   AUDIO FINGERPRINT (7 methods):
+//   AUDIO FINGERPRINT (7+ methods):
 //     AudioContext constructor, createOscillator, createAnalyser,
 //     createDynamicsCompressor, createBiquadFilter, createGain,
 //     createScriptProcessor, OfflineAudioContext constructor.
-//     Ghost: nodes created but fingerprint data neutered.
-//     Logs: sampleRate, baseLatency, node parameters.
+//     AudioBuffer.getChannelData, AudioBuffer.copyFromChannel,
+//     AnalyserNode.getFloat/ByteFrequency/TimeDomainData.
+//     Ghost: nodes created but fingerprint data neutered with
+//     deterministic noise. Spoof: domain-seeded noise on buffer reads.
 //
 //   SCREEN PROFILING (8 properties + CSS):
 //     screen.width/height/colorDepth/pixelDepth/availWidth/availHeight,
@@ -80,10 +86,12 @@
 //   FONT ENUMERATION:
 //     measureText() call counting + font family tracking.
 //     document.fonts.check() interception.
+//     CSS font probing via offsetWidth/offsetHeight interception.
 //     Ghost: returns constant metrics to block enumeration.
 //
 //   WEBRTC LEAK:
-//     RTCPeerConnection constructor. Ghost: returns dummy object.
+//     RTCPeerConnection and webkitRTCPeerConnection constructors.
+//     Ghost: returns dummy object.
 //
 //   BATTERY API:
 //     getBattery() + BatteryManager properties.
@@ -166,7 +174,10 @@
 //   postMessage:
 //     window.postMessage() with wildcard "*" origin.
 //
-// SPOOF VALUE POOLS:
+// SPOOF VALUE POOLS & PROFILES:
+//   Domain-seeded deterministic PRNG (FNV-1a of hostname) ensures values
+//   are consistent across page loads on the same site.
+//   4 consistent device profiles (platform+UA+GPU+cores+screen match).
 //   4 user agents, 9 language sets, 10 screen resolutions, 7 core counts,
 //   5 memory sizes, 8 GPU renderers, 10 timezones, 10 timezone offsets,
 //   26 WebGL extensions, 2 audio sample rates, 10 font families,
@@ -235,11 +246,40 @@
     mediaDeviceCounts: [1, 2, 3, 4, 5],
     webgpuArchitectures: ['gen-9', 'gen-12', 'ampere', 'rdna-2', 'rdna-3', 'apple-common'],
   };
-  // Deterministic per-session random (same values within a page load)
-  var _spoofSeed = Math.random();
+  // ── Domain-seeded deterministic PRNG ───────────────────────────────
+  // Uses FNV-1a hash of hostname so spoof values are consistent across
+  // page loads on the same site (prevents fingerprinters from detecting
+  // randomization by comparing values across navigations).
+  var _domainSeed = (function () {
+    var h = 0x811c9dc5;
+    var domain = window.location.hostname || 'localhost';
+    for (var i = 0; i < domain.length; i++) {
+      h ^= domain.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    return h >>> 0;
+  })();
+  var _prngState = _domainSeed;
+  function seededRandom() {
+    _prngState = (_prngState * 1664525 + 1013904223) & 0xffffffff;
+    return (_prngState >>> 0) / 0x100000000;
+  }
+  // Pre-roll a session seed from the domain PRNG for spoofPick
+  var _spoofSeed = seededRandom();
   function spoofPick(arr) { return arr[Math.floor(_spoofSeed * 7919 % arr.length)]; }
-  function spoofInt(min, max) { return min + Math.floor((_spoofSeed * 6271) % (max - min + 1)); }
-  function spoofFloat(base, variance) { return +(base + (_spoofSeed * variance * 2 - variance)).toFixed(6); }
+  function spoofInt(min, max) { return min + Math.floor(seededRandom() * (max - min + 1)); }
+  function spoofFloat(base, variance) { return +(base + (seededRandom() * variance * 2 - variance)).toFixed(6); }
+
+  // ── Consistent spoof profiles ─────────────────────────────────────
+  // Ensures platform + UA + GPU + vendor are internally coherent so
+  // cross-checking fingerprinters can't detect implausible combos.
+  var SPOOF_PROFILES = [
+    { platform: 'Win32', vendor: 'Google Inc.', ua: SPOOF.userAgents[0], gpu: SPOOF.gpuRenderers[0], gpuVendor: SPOOF.gpuVendors[0], cores: 8, memory: 16, screen: [1920,1080], pixelRatio: 1 },
+    { platform: 'Win32', vendor: 'Google Inc.', ua: SPOOF.userAgents[3], gpu: SPOOF.gpuRenderers[3], gpuVendor: SPOOF.gpuVendors[0], cores: 12, memory: 32, screen: [2560,1440], pixelRatio: 1 },
+    { platform: 'MacIntel', vendor: 'Apple Computer, Inc.', ua: SPOOF.userAgents[1], gpu: SPOOF.gpuRenderers[7], gpuVendor: SPOOF.gpuVendors[3], cores: 10, memory: 16, screen: [1440,900], pixelRatio: 2 },
+    { platform: 'Linux x86_64', vendor: '', ua: SPOOF.userAgents[2], gpu: SPOOF.gpuRenderers[1], gpuVendor: SPOOF.gpuVendors[1], cores: 6, memory: 8, screen: [1920,1080], pixelRatio: 1 },
+  ];
+  var _activeProfile = SPOOF_PROFILES[Math.floor(_spoofSeed * 7919 % SPOOF_PROFILES.length)];
 
   // Ghost default values
   var GHOST = {
@@ -401,15 +441,15 @@
               }
               if (mode === 'spoof') {
                 var fakeV = v;
-                if (p === 'platform') fakeV = spoofPick(SPOOF.platforms);
-                else if (p === 'vendor') fakeV = spoofPick(SPOOF.vendors);
+                if (p === 'platform') fakeV = _activeProfile.platform;
+                else if (p === 'vendor') fakeV = _activeProfile.vendor;
                 else if (p === 'languages') fakeV = spoofPick(SPOOF.languages);
                 else if (p === 'language') fakeV = spoofPick(SPOOF.languages)[0];
-                else if (p === 'hardwareConcurrency') fakeV = spoofPick(SPOOF.cores);
-                else if (p === 'deviceMemory') fakeV = spoofPick(SPOOF.memory);
+                else if (p === 'hardwareConcurrency') fakeV = _activeProfile.cores;
+                else if (p === 'deviceMemory') fakeV = _activeProfile.memory;
                 else if (p === 'maxTouchPoints') fakeV = spoofPick(SPOOF.touchPoints);
                 else if (p === 'webdriver') fakeV = false;
-                else if (p === 'userAgent') fakeV = spoofPick(SPOOF.userAgents);
+                else if (p === 'userAgent') fakeV = _activeProfile.ua;
                 else if (p === 'doNotTrack') fakeV = spoofPick([null, '1', 'unspecified']);
                 else if (p === 'cookieEnabled') fakeV = true;
                 else if (p === 'pdfViewerEnabled') fakeV = true;
@@ -426,6 +466,85 @@
       } catch (e) {}
     })(prop, navHooks[prop][0], navHooks[prop][1]);
   }
+
+  // ── NavigatorUAData.getHighEntropyValues() (Client Hints API) ─────
+  if (typeof NavigatorUAData !== 'undefined' && NavigatorUAData.prototype && NavigatorUAData.prototype.getHighEntropyValues) {
+    var origHighEntropy = NavigatorUAData.prototype.getHighEntropyValues;
+    NavigatorUAData.prototype.getHighEntropyValues = function (hints) {
+      var mode = _tgMode;
+      if (mode === 'ghost') {
+        emit(CAT.NAV, '👻 BLOCKED: userAgentData.getHighEntropyValues()', SEV.H, 'Ghost mode - returned generic Client Hints');
+        return Promise.resolve({
+          architecture: 'x86', bitness: '64',
+          brands: [{ brand: 'Not_A Brand', version: '8' }, { brand: 'Chromium', version: '124' }, { brand: 'Google Chrome', version: '124' }],
+          fullVersionList: [{ brand: 'Not_A Brand', version: '8.0.0.0' }, { brand: 'Chromium', version: '124.0.0.0' }, { brand: 'Google Chrome', version: '124.0.0.0' }],
+          mobile: false, model: '', platform: 'Windows', platformVersion: '15.0.0', uaFullVersion: '124.0.0.0',
+        });
+      }
+      if (mode === 'spoof') {
+        var isApple = _activeProfile.platform === 'MacIntel';
+        var isLinux = _activeProfile.platform.indexOf('Linux') === 0;
+        var spoofedHints = {
+          architecture: isApple ? 'arm' : 'x86', bitness: '64',
+          brands: [{ brand: 'Not_A Brand', version: '8' }, { brand: 'Chromium', version: '124' }, { brand: 'Google Chrome', version: '124' }],
+          fullVersionList: [{ brand: 'Not_A Brand', version: '8.0.0.0' }, { brand: 'Chromium', version: '124.0.0.0' }, { brand: 'Google Chrome', version: '124.0.0.0' }],
+          mobile: false, model: '', platform: isApple ? 'macOS' : isLinux ? 'Linux' : 'Windows',
+          platformVersion: isApple ? '14.0.0' : isLinux ? '6.5.0' : '15.0.0', uaFullVersion: '124.0.0.0',
+        };
+        emit(CAT.NAV, '🎭 SPOOFED: userAgentData.getHighEntropyValues()', SEV.H, 'Spoofed Client Hints: ' + spoofedHints.platform + '/' + spoofedHints.architecture);
+        return Promise.resolve(spoofedHints);
+      }
+      var p = origHighEntropy.call(this, hints);
+      p.then(function(res) {
+        emit(CAT.NAV, 'userAgentData.getHighEntropyValues()', SEV.H, 'platform: ' + res.platform + ', arch: ' + res.architecture + ', bitness: ' + res.bitness + ', hints: [' + (hints || []).join(',') + ']');
+      }).catch(function(){});
+      return p;
+    };
+  }
+
+  // ── CSS Font Probe Detection (offsetWidth/offsetHeight) ───────────
+  // Classic font enumeration: create hidden span, set font-family to
+  // "TestFont, fallback", check if offsetWidth/Height differs from
+  // fallback-only. We intercept these to detect rapid probing.
+  (function () {
+    var fontProbeTracker = { count: 0, timer: null, active: false };
+    var FONT_PROBE_THRESHOLD = 10;
+    var FONT_PROBE_WINDOW = 500;
+
+    function trackFontProbe() {
+      fontProbeTracker.count++;
+      if (fontProbeTracker.timer) clearTimeout(fontProbeTracker.timer);
+      fontProbeTracker.timer = setTimeout(function () {
+        if (fontProbeTracker.count > FONT_PROBE_THRESHOLD) {
+          fontProbeTracker.active = true;
+          emit(CAT.FONT, (_tgMode === 'spoof' ? '🎭 ' : _tgMode === 'ghost' ? '👻 ' : '') + 'CSS font probe detected (' + fontProbeTracker.count + ' offset reads)', SEV.H, 'Rapid offsetWidth/offsetHeight reads indicate font enumeration');
+          setTimeout(function () { fontProbeTracker.active = false; }, 2000);
+        }
+        fontProbeTracker.count = 0;
+      }, FONT_PROBE_WINDOW);
+    }
+
+    ['offsetWidth', 'offsetHeight'].forEach(function (prop) {
+      try {
+        var desc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, prop);
+        if (desc && desc.get) {
+          var origGet = desc.get;
+          Object.defineProperty(HTMLElement.prototype, prop, {
+            get: function () {
+              var val = origGet.call(this);
+              trackFontProbe();
+              if (fontProbeTracker.active && (_tgMode === 'ghost' || _tgMode === 'spoof')) {
+                // Return a fixed value to block font enumeration
+                return prop === 'offsetWidth' ? 120 : 18;
+              }
+              return val;
+            },
+            configurable: true,
+          });
+        }
+      } catch (e) {}
+    });
+  })();
 
   // getBattery
   if (navigator.getBattery) {
@@ -513,22 +632,47 @@
   }
 
   // ── CANVAS FINGERPRINTING ──────────────────────────────
+  // ── Canvas noise helper (deterministic per-domain) ─────────────────
+  function addCanvasNoise(canvas) {
+    try {
+      var ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      var w = canvas.width, h = canvas.height;
+      if (w === 0 || h === 0) return;
+      for (var i = 0; i < 5; i++) {
+        var x = Math.floor(seededRandom() * w);
+        var y = Math.floor(seededRandom() * h);
+        var cr = Math.floor(seededRandom() * 256);
+        var cg = Math.floor(seededRandom() * 256);
+        var cb = Math.floor(seededRandom() * 256);
+        ctx.fillStyle = 'rgba(' + cr + ',' + cg + ',' + cb + ',0.01)';
+        ctx.fillRect(x, y, 1, 1);
+      }
+    } catch (_) {}
+  }
+  function addImageDataNoise(imageData) {
+    var data = imageData.data;
+    for (var i = 0; i < 10; i++) {
+      var idx = Math.floor(seededRandom() * data.length);
+      data[idx] ^= 1;
+    }
+    return imageData;
+  }
+
   var _toDataURL = HTMLCanvasElement.prototype.toDataURL;
   HTMLCanvasElement.prototype.toDataURL = function () {
     var r = _toDataURL.apply(this, arguments);
     if (this.width > 0 && this.height > 0) {
       var mode = _tgMode;
       if (mode === 'ghost') {
-        emit(CAT.CANVAS, '👻 BLOCKED: canvas.toDataURL(' + this.width + '\u00d7' + this.height + ')', SEV.C, 'Ghost mode - returned blank canvas');
-        var blank = document.createElement('canvas'); blank.width = this.width; blank.height = this.height;
-        return _toDataURL.call(blank);
+        // Add deterministic noise (returns common-looking hash, not blank)
+        addCanvasNoise(this);
+        var ghosted = _toDataURL.apply(this, arguments);
+        emit(CAT.CANVAS, '👻 BLOCKED: canvas.toDataURL(' + this.width + '\u00d7' + this.height + ')', SEV.C, 'Ghost mode - deterministic noise applied');
+        return ghosted;
       }
       if (mode === 'spoof') {
-        // Add noise pixels to canvas to randomize fingerprint
-        try {
-          var ctx = this.getContext('2d');
-          if (ctx) { ctx.fillStyle = 'rgba(' + spoofInt(0,3) + ',' + spoofInt(0,3) + ',' + spoofInt(0,3) + ',0.01)'; ctx.fillRect(spoofInt(0,5), spoofInt(0,5), 1, 1); }
-        } catch(e) {}
+        addCanvasNoise(this);
         var spoofed = _toDataURL.apply(this, arguments);
         emit(CAT.CANVAS, '🎭 SPOOFED: canvas.toDataURL(' + this.width + '\u00d7' + this.height + ')', SEV.C, 'Added noise - fingerprint randomized');
         return spoofed;
@@ -542,12 +686,10 @@
   HTMLCanvasElement.prototype.toBlob = function (cb) {
     if (this.width > 0 && this.height > 0) {
       if (_tgMode === 'ghost') {
-        emit(CAT.CANVAS, '👻 BLOCKED: canvas.toBlob(' + this.width + '\u00d7' + this.height + ')', SEV.C, 'Ghost mode - returned blank canvas blob');
-        var blank = document.createElement('canvas'); blank.width = this.width; blank.height = this.height;
-        return _toBlob.call(blank, cb);
-      }
-      if (_tgMode === 'spoof') {
-        try { var ctx = this.getContext('2d'); if (ctx) { ctx.fillStyle = 'rgba(' + spoofInt(0,3) + ',' + spoofInt(0,3) + ',' + spoofInt(0,3) + ',0.01)'; ctx.fillRect(spoofInt(0,5), spoofInt(0,5), 1, 1); } } catch(e) {}
+        addCanvasNoise(this);
+        emit(CAT.CANVAS, '👻 BLOCKED: canvas.toBlob(' + this.width + '\u00d7' + this.height + ')', SEV.C, 'Ghost mode - deterministic noise applied');
+      } else if (_tgMode === 'spoof') {
+        addCanvasNoise(this);
         emit(CAT.CANVAS, '🎭 SPOOFED: canvas.toBlob(' + this.width + '\u00d7' + this.height + ')', SEV.C, 'Noise injected - blob fingerprint randomized');
       } else {
         emit(CAT.CANVAS, 'canvas.toBlob(' + this.width + '\u00d7' + this.height + ')', SEV.C, 'Blob callback');
@@ -559,12 +701,12 @@
   CanvasRenderingContext2D.prototype.getImageData = function (x, y, w, h) {
     var result = _getImageData.apply(this, arguments);
     if (_tgMode === 'ghost') {
-      emit(CAT.CANVAS, '👻 BLOCKED: getImageData(' + x + ',' + y + ',' + w + ',' + h + ')', SEV.H, 'Ghost mode - returned zeroed pixel data (' + w*h*4 + ' bytes)');
-      return new ImageData(w, h); // all zeros
+      addImageDataNoise(result);
+      emit(CAT.CANVAS, '👻 BLOCKED: getImageData(' + x + ',' + y + ',' + w + ',' + h + ')', SEV.H, 'Ghost mode - deterministic noise applied (' + w*h*4 + ' bytes)');
+      return result;
     }
     if (_tgMode === 'spoof') {
-      // Add subtle noise to a few random pixels
-      for (var ni = 0; ni < 3; ni++) { var px = spoofInt(0, result.data.length - 4); result.data[px] = (result.data[px] + spoofInt(1,3)) & 0xFF; }
+      addImageDataNoise(result);
       emit(CAT.CANVAS, '🎭 SPOOFED: getImageData(' + x + ',' + y + ',' + w + ',' + h + ')', SEV.H, 'Noise injected into ' + w + '\u00d7' + h + ' pixel data (' + result.data.length + ' bytes)');
       return result;
     }
@@ -606,8 +748,8 @@
         }
         if (mode === 'spoof') {
           var fakeR = r;
-          if (p === 0x9245 || p === 0x1F00) fakeR = spoofPick(SPOOF.gpuVendors);
-          else if (p === 0x9246 || p === 0x1F01) fakeR = spoofPick(SPOOF.gpuRenderers);
+          if (p === 0x9245 || p === 0x1F00) fakeR = _activeProfile.gpuVendor;
+          else if (p === 0x9246 || p === 0x1F01) fakeR = _activeProfile.gpu;
           emit(CAT.WEBGL, '🎭 SPOOFED: getParameter(' + paramNames[p] + ')', SEV.H, 'Real: ' + r + ' → Fake: ' + fakeR);
           return fakeR;
         }
@@ -702,6 +844,83 @@
     window.OfflineAudioContext.prototype = OrigOAC.prototype;
   }
 
+  // ── Audio buffer read hooks (deterministic noise) ─────────────────
+  // Fingerprinters read audio buffer data to get a unique hash.
+  // We inject deterministic noise into the buffer reads.
+  if (typeof AudioBuffer !== 'undefined') {
+    var origGetChannelData = AudioBuffer.prototype.getChannelData;
+    AudioBuffer.prototype.getChannelData = function (channel) {
+      var result = origGetChannelData.call(this, channel);
+      var mode = _tgMode;
+      if (mode === 'ghost' || mode === 'spoof') {
+        // Apply deterministic noise: flip LSB of a few samples
+        for (var i = 0; i < 10; i++) {
+          var idx = Math.floor(seededRandom() * result.length);
+          result[idx] = result[idx] + (seededRandom() - 0.5) * 0.0001;
+        }
+        emit(CAT.AUDIO, (mode === 'ghost' ? '👻 ' : '🎭 ') + 'AudioBuffer.getChannelData(ch:' + channel + ', len:' + result.length + ')', SEV.H, (mode === 'ghost' ? 'Ghost' : 'Spoof') + ' mode - deterministic noise applied');
+      } else {
+        emit(CAT.AUDIO, 'AudioBuffer.getChannelData(ch:' + channel + ', len:' + result.length + ')', SEV.H, 'Audio buffer read - fingerprint vector');
+      }
+      return result;
+    };
+
+    if (AudioBuffer.prototype.copyFromChannel) {
+      var origCopyFrom = AudioBuffer.prototype.copyFromChannel;
+      AudioBuffer.prototype.copyFromChannel = function (dest, channel) {
+        origCopyFrom.apply(this, arguments);
+        var mode = _tgMode;
+        if (mode === 'ghost' || mode === 'spoof') {
+          for (var i = 0; i < 10; i++) {
+            var idx = Math.floor(seededRandom() * dest.length);
+            dest[idx] = dest[idx] + (seededRandom() - 0.5) * 0.0001;
+          }
+          emit(CAT.AUDIO, (mode === 'ghost' ? '👻 ' : '🎭 ') + 'AudioBuffer.copyFromChannel(ch:' + channel + ', len:' + dest.length + ')', SEV.H, (mode === 'ghost' ? 'Ghost' : 'Spoof') + ' mode - deterministic noise applied');
+        } else {
+          emit(CAT.AUDIO, 'AudioBuffer.copyFromChannel(ch:' + channel + ', len:' + dest.length + ')', SEV.H, 'Audio buffer copy - fingerprint vector');
+        }
+      };
+    }
+  }
+
+  // Hook AnalyserNode frequency/time domain data reads
+  if (typeof AnalyserNode !== 'undefined') {
+    ['getFloatFrequencyData', 'getFloatTimeDomainData'].forEach(function (method) {
+      var orig = AnalyserNode.prototype[method];
+      if (!orig) return;
+      AnalyserNode.prototype[method] = function (array) {
+        orig.call(this, array);
+        var mode = _tgMode;
+        if (mode === 'ghost' || mode === 'spoof') {
+          for (var i = 0; i < Math.min(5, array.length); i++) {
+            var idx = Math.floor(seededRandom() * array.length);
+            array[idx] += (seededRandom() - 0.5) * 0.001;
+          }
+          emit(CAT.AUDIO, (mode === 'ghost' ? '👻 ' : '🎭 ') + 'AnalyserNode.' + method + '(len:' + array.length + ')', SEV.H, 'Deterministic noise applied');
+        } else {
+          emit(CAT.AUDIO, 'AnalyserNode.' + method + '(len:' + array.length + ')', SEV.H, 'Audio analysis data read');
+        }
+      };
+    });
+    ['getByteFrequencyData', 'getByteTimeDomainData'].forEach(function (method) {
+      var orig = AnalyserNode.prototype[method];
+      if (!orig) return;
+      AnalyserNode.prototype[method] = function (array) {
+        orig.call(this, array);
+        var mode = _tgMode;
+        if (mode === 'ghost' || mode === 'spoof') {
+          for (var i = 0; i < Math.min(5, array.length); i++) {
+            var idx = Math.floor(seededRandom() * array.length);
+            array[idx] = (array[idx] + (seededRandom() > 0.5 ? 1 : -1)) & 0xFF;
+          }
+          emit(CAT.AUDIO, (mode === 'ghost' ? '👻 ' : '🎭 ') + 'AnalyserNode.' + method + '(len:' + array.length + ')', SEV.H, 'Deterministic noise applied');
+        } else {
+          emit(CAT.AUDIO, 'AnalyserNode.' + method + '(len:' + array.length + ')', SEV.H, 'Audio analysis data read');
+        }
+      };
+    });
+  }
+
   // ── SCREEN PROFILING ───────────────────────────────────
   ['width','height','colorDepth','pixelDepth','availWidth','availHeight'].forEach(function(p) {
     try {
@@ -718,7 +937,7 @@
               return gv;
             }
             if (mode === 'spoof') {
-              var scr = spoofPick(SPOOF.screens);
+              var scr = _activeProfile.screen;
               var sv = (p === 'width' || p === 'availWidth') ? scr[0] : (p === 'height' || p === 'availHeight') ? scr[1] : spoofPick(SPOOF.colorDepths);
               emit(CAT.SCREEN, '🎭 SPOOFED: screen.' + p, SEV.L, 'Real: ' + v + ' → Fake: ' + sv);
               return sv;
@@ -737,7 +956,7 @@
       get: function() {
         var mode = _tgMode;
         if (mode === 'ghost') { emit(CAT.SCREEN, '👻 BLOCKED: devicePixelRatio', SEV.L, 'Ghost → ' + GHOST.pixelRatio); return GHOST.pixelRatio; }
-        if (mode === 'spoof') { var f = spoofPick(SPOOF.pixelRatios); emit(CAT.SCREEN, '🎭 SPOOFED: devicePixelRatio', SEV.L, 'Real: ' + _dpr + ' → Fake: ' + f); return f; }
+        if (mode === 'spoof') { var f = _activeProfile.pixelRatio; emit(CAT.SCREEN, '🎭 SPOOFED: devicePixelRatio', SEV.L, 'Real: ' + _dpr + ' → Fake: ' + f); return f; }
         emit(CAT.SCREEN, 'devicePixelRatio', SEV.L, _dpr); return _dpr;
       },
       set: function(v) { _dpr = v; }, configurable: true
@@ -770,7 +989,7 @@
           return { matches: false, media: q, onchange: null, addListener: function(){}, removeListener: function(){}, addEventListener: function(){}, removeEventListener: function(){}, dispatchEvent: function(){return false} };
         }
         if (_tgMode === 'spoof') {
-          var fakeMatch = Math.random() > 0.5;
+          var fakeMatch = seededRandom() > 0.5;
           emit(CAT.SCREEN, '🎭 SPOOFED: CSS ' + fpjsMatch, SEV.M, 'Query: "' + q + '" → real: ' + result.matches + ' → fake: ' + fakeMatch);
           return { matches: fakeMatch, media: q, onchange: null, addListener: function(){}, removeListener: function(){}, addEventListener: function(){}, removeEventListener: function(){}, dispatchEvent: function(){return false} };
         }
@@ -936,6 +1155,22 @@
       return new (Function.prototype.bind.apply(OrigRTC, [null].concat(Array.from(arguments))))();
     };
     window.RTCPeerConnection.prototype = OrigRTC.prototype;
+  }
+  // Also hook the webkit-prefixed variant
+  if (window.webkitRTCPeerConnection) {
+    var OrigWebkitRTC = window.webkitRTCPeerConnection;
+    window.webkitRTCPeerConnection = function () {
+      var config = arguments[0] || {};
+      var mode = _tgMode;
+      if (mode === 'ghost') {
+        emit(CAT.WEBRTC, '👻 BLOCKED: webkitRTCPeerConnection - IP leak prevented', SEV.C, 'Ghost mode - connection blocked');
+        var dummy = { createDataChannel: function(){return{}}, createOffer: function(){return Promise.resolve({})}, setLocalDescription: function(){return Promise.resolve()}, close: function(){}, addEventListener: function(){}, removeEventListener: function(){} };
+        return dummy;
+      }
+      emit(CAT.WEBRTC, (mode === 'spoof' ? '🎭 ' : '') + 'new webkitRTCPeerConnection() - IP leak vector', SEV.C, JSON.stringify(config));
+      return new (Function.prototype.bind.apply(OrigWebkitRTC, [null].concat(Array.from(arguments))))();
+    };
+    window.webkitRTCPeerConnection.prototype = OrigWebkitRTC.prototype;
   }
 
   // ── DYNAMIC CODE EXEC ──────────────────────────────────

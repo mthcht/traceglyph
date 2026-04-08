@@ -25,8 +25,8 @@ TraceGlyph is a free, open-source Chrome/Edge/Brave extension that performs real
 
 ## Features
 
-### Fingerprint Detection - 40+ API hooks
-Intercepts Canvas, WebGL, WebGPU, Audio, Font, WebRTC, Battery, Media Devices, Screen, Navigator (22 properties), Geolocation, Speech Synthesis, Gamepad, behavioral biometrics (mouse/keyboard/scroll), and incognito mode probing.
+### Fingerprint Detection - 50+ API hooks
+Intercepts Canvas, WebGL, WebGPU, Audio (buffer reads + AnalyserNode), Font (measureText + CSS offset probing), WebRTC (including webkit prefix), Battery, Media Devices, Screen, Navigator (25+ properties), Client Hints (getHighEntropyValues), Geolocation, Speech Synthesis, Gamepad, behavioral biometrics (mouse/keyboard/scroll), and incognito mode probing. Ghost and spoof modes use domain-seeded deterministic noise and internally-consistent device profiles.
 
 ### Phishing Analysis - 47 detection rules
 Credential harvesting forms (cross-origin, mailto, orphan password fields), brand impersonation (30+ tracked brands), anti-analysis evasion (DevTools blocking, debugger traps, console.clear), social engineering urgency detection (19 phrases), exfiltration channels (Telegram bots, Discord webhooks), and suspicious page structure (overlay login, hidden iframes, minimal pages).
@@ -118,32 +118,35 @@ MIT
 TraceGlyph includes two active protection modes, toggled per-site or globally from the popup header:
 
 ### 👻 Ghost Mode - Block fingerprinting
-Returns generic/default values. Sites see a standard browser profile instead of your real one.
+Returns generic/default values. Sites see a standard browser profile instead of your real one. Canvas and audio use domain-seeded deterministic noise instead of blank/zeroed values (blank responses are more fingerprintable than common-looking hashes).
 
 | API | Ghost returns |
 |-----|-------------|
 | Navigator | Win32, Google Inc., en-US, 4 cores, 8GB RAM, no plugins |
-| Canvas | Blank canvas (zeroed pixels) |
+| Client Hints | Generic x86/Windows/Chrome 124 profile |
+| Canvas | Domain-seeded deterministic noise (stable across visits) |
 | WebGL | Generic "WebKit WebGL", strips debug_renderer_info |
 | WebGPU | null adapter (no GPU info) |
 | Screen | 1920×1080, 24-bit, 1x pixel ratio |
 | CSS media queries | All fingerprint queries → false |
-| Audio | Nodes created but data neutered |
-| Font | Constant metrics (blocks enumeration) |
-| WebRTC | Completely blocked - dummy object, no IP leaks |
+| Audio | Nodes created, buffer reads get deterministic noise |
+| Font | Constant metrics for measureText + CSS offset probing |
+| WebRTC | Completely blocked (incl. webkit prefix) - dummy object, no IP leaks |
 | Battery | Fake full battery (100%, charging) |
 | Timezone | UTC (offset 0) |
 | Incognito probe | Large quota (appears non-incognito) |
 
 ### 🎭 Spoof Mode - Randomize fingerprinting
-Returns realistic fake values from curated pools. Values stay consistent within a page load.
+Returns realistic fake values from curated, internally-consistent device profiles. Values are domain-seeded (FNV-1a hash of hostname) so the same site always sees the same fingerprint across page loads.
 
 | API | Spoof behavior |
 |-----|---------------|
-| Navigator | Random from real platform/vendor/language/core pools |
-| Canvas | Invisible noise pixels injected before reading |
-| WebGL | Random GPU from pool of 8 real renderer strings |
-| Screen | Random from 10 common resolutions |
+| Navigator | Consistent profile (platform + UA + GPU + cores all match) |
+| Client Hints | Architecture/platform coherent with active profile |
+| Canvas | Domain-seeded deterministic noise pixels |
+| WebGL | GPU renderer matching active profile |
+| Screen | Resolution + pixel ratio from active profile |
+| Audio | Buffer reads get deterministic noise |
 | CSS media queries | Randomized true/false |
 | Timezone | Random from 10 real timezones |
 | Media devices | Randomized device count |

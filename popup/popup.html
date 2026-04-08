@@ -141,9 +141,12 @@ body::-webkit-scrollbar{width:6px}body::-webkit-scrollbar-track{background:var(-
 
 /* GROUPS */
 .grp{margin-bottom:10px}
-.grp-h{display:flex;align-items:center;gap:6px;padding:6px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);cursor:pointer}
+.grp-h{display:flex;align-items:center;gap:6px;padding:6px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);cursor:pointer;user-select:none;border-radius:4px;padding-left:4px;margin-left:-4px}
+.grp-h:hover{background:var(--bg3)}
 .grp-h .arr{font-size:9px;color:var(--t3);transition:transform .15s}.grp-h.collapsed .arr{transform:rotate(-90deg)}
 .grp-ct{font-family:var(--mono);background:var(--bg3);padding:2px 6px;border-radius:6px;font-size:10px;color:var(--t3)}
+.grp-toggle-all{font-family:var(--mono);font-size:9px;color:var(--t3);background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px}
+.grp-toggle-all:hover{color:var(--t1);border-color:var(--t3)}
 
 /* DOMAIN/NETWORK ROWS */
 .dom-row{display:flex;flex-wrap:wrap;gap:6px 12px;padding:8px 10px;background:var(--bg1);border:1px solid var(--bdr);border-radius:8px;margin-bottom:4px;font-family:var(--mono);font-size:11px;align-items:center;box-shadow:var(--card-shadow)}
