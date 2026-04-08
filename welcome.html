@@ -11,7 +11,7 @@
   CONTENT:
     - Extension name, version badge, compatibility badge (Chrome/Edge/Brave).
     - Full description of all capabilities with icon grid cards:
-      * Fingerprint detection (40+ API hooks)
+      * Fingerprint detection (50+ API hooks)
       * Network intelligence (IP resolution, redirect chains, trackers)
       * Phishing detection (47 rules)
       * Technology detection (120+ technologies)
@@ -117,7 +117,7 @@ tr:nth-child(even){background:#fafbfc}
 <!-- CAPABILITIES GRID -->
 <h2>Capabilities</h2>
 <div class="grid">
-  <div class="gcard"><div class="gcard-icon">🔍</div><h4>Fingerprint Detection</h4><p>Intercepts 40+ browser API hooks in real time: Canvas, WebGL, WebGPU, Audio, Font, WebRTC, Battery, Media Devices, Screen, Navigator, Geolocation, Speech Synthesis, Gamepad, and behavioral biometrics.</p><div class="count">40+ API hooks · 758 lines</div></div>
+  <div class="gcard"><div class="gcard-icon">🔍</div><h4>Fingerprint Detection</h4><p>Intercepts 50+ browser API hooks in real time: Canvas, WebGL, WebGPU, Audio, Font, WebRTC, Battery, Media Devices, Screen, Navigator, Geolocation, Speech Synthesis, Gamepad, and behavioral biometrics.</p><div class="count">50+ API hooks</div></div>
   <div class="gcard"><div class="gcard-icon">🎣</div><h4>Phishing Analysis</h4><p>47 phishing detection rules across 7 categories: credential harvesting forms, brand impersonation (30+ brands), anti-analysis/DevTools evasion, social engineering urgency cues, exfiltration channels (Telegram/Discord bots), and suspicious page structure.</p><div class="count">47 rules · 7 categories</div></div>
   <div class="gcard"><div class="gcard-icon">🌐</div><h4>Network Intelligence</h4><p>Tracks every domain contacted with resolved IPs, redirect chains with status codes, third-party script identification (60+ known trackers), request waterfall, and resource statistics (HTTPS percentage, type breakdown).</p><div class="count">60+ tracker signatures</div></div>
   <div class="gcard"><div class="gcard-icon">🛡️</div><h4>Security Audit</h4><p>Audits 12+ HTTP security headers (CSP, HSTS, X-Frame-Options, Referrer-Policy, COOP/COEP), cookie flags (Secure, HttpOnly, SameSite), form risk assessment, and iframe analysis.</p><div class="count">12+ headers checked</div></div>
@@ -125,8 +125,8 @@ tr:nth-child(even){background:#fafbfc}
   <div class="gcard"><div class="gcard-icon">🧬</div><h4>Technology Detection</h4><p>Wappalyzer-class detection via 3 layers: DOM patterns + window globals + URL/header matching. Identifies 120+ technologies across 25+ categories (CMS, frameworks, analytics, session replay, CDN, hosting, payment).</p><div class="count">120+ technologies</div></div>
   <div class="gcard"><div class="gcard-icon">⚔️</div><h4>MITRE ATT&CK Mapping</h4><p>Every detection category maps to ATT&CK technique IDs: T1082 System Info Discovery, T1566 Phishing, T1059.007 JavaScript, T1496 Resource Hijacking, T1115 Clipboard Data, T1027 Obfuscated Files, and 20+ more.</p><div class="count">26 technique mappings</div></div>
   <div class="gcard"><div class="gcard-icon">📋</div><h4>IOC Export</h4><p>One-click export of domains, IPs, domain→IP map, redirect chains, tracker URLs, suspicious domains, script SHA-256 hashes, network anomalies, and critical detections. Copy Report generates a structured incident summary.</p><div class="count">10 IOC categories</div></div>
-  <div class="gcard"><div class="gcard-icon">👻</div><h4>Ghost Mode</h4><p>Block all fingerprinting by returning generic values. Canvas returns blank data, WebGL hides GPU info, WebRTC is fully blocked, navigator returns standard profiles. Enable per-site or globally.</p><div class="count">12 API categories blocked</div></div>
-  <div class="gcard"><div class="gcard-icon">🎭</div><h4>Spoof Mode</h4><p>Randomize fingerprint responses with realistic fake values. Each page load gets a consistent but unique fake profile from curated pools of real device data. Shows "Real → Fake" comparisons.</p><div class="count">10 spoof pools · session-consistent</div></div>
+  <div class="gcard"><div class="gcard-icon">👻</div><h4>Ghost Mode</h4><p>Block all fingerprinting by returning generic values. Canvas applies deterministic noise, WebGL hides GPU info, WebRTC is fully blocked, navigator returns standard profiles. Enable per-site or globally.</p><div class="count">12 API categories blocked</div></div>
+  <div class="gcard"><div class="gcard-icon">🎭</div><h4>Spoof Mode</h4><p>Randomize fingerprint responses with realistic fake values. Domain-seeded deterministic PRNG ensures consistent profiles across page loads. 4 coherent device profiles (platform+UA+GPU+cores match). Shows "Real → Fake" comparisons.</p><div class="count">10 spoof pools · session-consistent</div></div>
   <div class="gcard"><div class="gcard-icon">🔎</div><h4>Page IOC Extractor</h4><p>Automatically extracts IOCs from visible page text - perfect for reading threat reports and advisories. Finds IPs, domains, URLs, file hashes (MD5/SHA1/SHA256), CVE IDs, MITRE ATT&CK IDs, emails, suspicious filenames, registry keys, and crypto wallet addresses. Handles defanged indicators (hxxp, [.], [at]).</p><div class="count">14 IOC types · auto-refanging</div></div>
   <div class="gcard"><div class="gcard-icon">📡</div><h4>Tracking Pixel Decoder</h4><p>Detects hidden tracking pixels and beacons (1x1 images, invisible img tags), decodes their URL parameters, and reveals exactly what data each pixel transmits about you. Identifies 35+ tracking networks (Meta, Google, LinkedIn, TikTok, Criteo, Adobe, etc.) and classifies leaked data into categories: user ID, session, page info, device, timing, geolocation, revenue, and consent signals.</p><div class="count">35+ networks · 9 data categories</div></div>
 </div>
@@ -138,10 +138,10 @@ tr:nth-child(even){background:#fafbfc}
   <tr><td>Canvas Fingerprint</td><td>toDataURL, toBlob, getImageData, readPixels on canvas elements</td><td>T1082</td></tr>
   <tr><td>WebGL Fingerprint</td><td>getParameter (VENDOR/RENDERER), debug_renderer_info, getSupportedExtensions</td><td>T1082</td></tr>
   <tr><td>WebGPU Fingerprint</td><td>navigator.gpu.requestAdapter() - GPU architecture, features, limits</td><td>T1082</td></tr>
-  <tr><td>Audio Fingerprint</td><td>Oscillator, Analyser, DynamicsCompressor, OfflineAudioContext</td><td>T1082</td></tr>
-  <tr><td>Font Enumeration</td><td>Rapid measureText() calls, document.fonts.check() probing</td><td>T1082</td></tr>
-  <tr><td>WebRTC Leak</td><td>RTCPeerConnection creation - local/public IP exposure</td><td>T1016</td></tr>
-  <tr><td>Navigator Probing</td><td>22 navigator properties + behavioral biometrics (mouse/keyboard/scroll tracking)</td><td>T1082</td></tr>
+  <tr><td>Audio Fingerprint</td><td>Oscillator, Analyser, DynamicsCompressor, OfflineAudioContext, getChannelData, copyFromChannel</td><td>T1082</td></tr>
+  <tr><td>Font Enumeration</td><td>Rapid measureText() calls, document.fonts.check(), CSS offset probing (offsetWidth/offsetHeight)</td><td>T1082</td></tr>
+  <tr><td>WebRTC Leak</td><td>RTCPeerConnection &amp; webkitRTCPeerConnection - local/public IP exposure</td><td>T1016</td></tr>
+  <tr><td>Navigator Probing</td><td>25+ navigator properties + Client Hints (getHighEntropyValues) + behavioral biometrics (mouse/keyboard/scroll tracking)</td><td>T1082</td></tr>
   <tr><td>Phishing Indicator</td><td>Cross-origin login forms, brand impersonation, anti-debug, urgency cues, credential exfil</td><td>T1566</td></tr>
   <tr><td>JS Obfuscation</td><td>Eval packers, Base64+XOR, hex encoding, string rotation, cache-busting hashes</td><td>T1027</td></tr>
   <tr><td>Suspicious URL</td><td>Raw IPs, punycode homographs, brand keywords in non-brand domains, phishing TLDs</td><td>T1036</td></tr>
@@ -219,18 +219,6 @@ tr:nth-child(even){background:#fafbfc}
 </div>
 </div>
 
-<script>
-(function() {
-  var ua = navigator.userAgent || '';
-  var extUrl = 'chrome://extensions';
-  if (ua.indexOf('Edg/') !== -1) extUrl = 'edge://extensions';
-  else if (navigator.brave && typeof navigator.brave.isBrave === 'function') extUrl = 'brave://extensions';
-  else if (ua.indexOf('OPR/') !== -1) extUrl = 'opera://extensions';
-  else if (ua.indexOf('Vivaldi/') !== -1) extUrl = 'vivaldi://extensions';
-  var el = document.getElementById('extUrl');
-  el.textContent = extUrl;
-  el.addEventListener('click', function() { try { chrome.tabs.create({ url: extUrl }); } catch(e) {} });
-})();
-</script>
+<script src="welcome.js"></script>
 </body>
 </html>
