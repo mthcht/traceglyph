@@ -112,6 +112,15 @@
   // Set default immediately (storage callback may be async)
   document.documentElement.setAttribute('data-tg-mode', 'off');
 
+  // Listen for mode changes from popup
+  try {
+    chrome.runtime.onMessage.addListener(function(msg) {
+      if (msg && msg.action === 'setMode' && msg.mode) {
+        document.documentElement.setAttribute('data-tg-mode', msg.mode);
+      }
+    });
+  } catch(e) {}
+
   const script = document.createElement('script');
   script.src = chrome.runtime.getURL('injected.js');
   script.onload = () => script.remove();

@@ -56,13 +56,13 @@
   --accent:#60a5fa;--accent2:#a78bfa;
   --card-shadow:0 1px 3px rgba(0,0,0,.3);
 }
-body{width:660px;min-width:660px;max-height:600px;overflow-y:auto;background:var(--bg0);color:var(--t1);font-family:var(--sans);font-size:13px;line-height:1.6;transition:background .2s,color .2s}
+body{width:790px;min-width:790px;max-height:600px;overflow-y:auto;background:var(--bg0);color:var(--t1);font-family:var(--sans);font-size:13px;line-height:1.6;transition:background .2s,color .2s}
 body::-webkit-scrollbar{width:6px}body::-webkit-scrollbar-track{background:var(--bg1)}body::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
 
 /* HEADER */
 .hdr{padding:10px 20px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;background:var(--bg0)}
 .logo{display:flex;align-items:center;gap:10px}
-.logo-i{width:26px;height:26px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;font-family:var(--mono)}
+.logo-i{width:26px;height:26px;border-radius:7px;object-fit:contain}
 .logo-t{font-weight:700;font-size:14px;letter-spacing:-.3px}
 .logo-ver{font-size:9px;color:var(--t3);font-family:var(--mono);background:var(--bg2);padding:2px 6px;border-radius:4px;margin-left:4px}
 .hdr-btns{display:flex;gap:5px}
@@ -111,8 +111,8 @@ body::-webkit-scrollbar{width:6px}body::-webkit-scrollbar-track{background:var(-
 .st-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
 
 /* TABS */
-.tabs{display:flex;flex-wrap:wrap;gap:4px;padding:10px 20px;border-bottom:1px solid var(--bdr);background:var(--bg1)}
-.tab{padding:6px 12px;font-size:11px;font-weight:600;color:var(--t3);cursor:pointer;border-radius:6px;white-space:nowrap;user-select:none;transition:all .15s}
+.tabs{display:flex;gap:4px;padding:10px 14px;border-bottom:1px solid var(--bdr);background:var(--bg1)}
+.tab{padding:5px 9px;font-size:10.5px;font-weight:600;color:var(--t3);cursor:pointer;border-radius:6px;white-space:nowrap;user-select:none;transition:all .15s}
 .tab:hover{color:var(--t2);background:var(--bg2)}
 .tab.active{color:var(--accent);background:var(--bg0);box-shadow:var(--card-shadow);border:1px solid var(--bdr)}
 .tab .b{display:inline-block;min-width:16px;padding:0 5px;height:16px;line-height:16px;border-radius:8px;font-size:10px;font-family:var(--mono);margin-left:4px;background:var(--bg3);color:var(--t3)}
@@ -217,7 +217,7 @@ body::-webkit-scrollbar{width:6px}body::-webkit-scrollbar-track{background:var(-
 </head>
 <body>
 <div class="hdr">
-  <div class="logo"><div class="logo-i">TG</div><div class="logo-t">TraceGlyph</div></div>
+  <div class="logo"><img class="logo-i" src="../icons/icon48.png" alt="TG"><div class="logo-t">TraceGlyph</div></div>
   <div class="hdr-btns">
     <button class="btn-mode" id="btnGhost" title="Ghost mode - block fingerprinting">👻</button>
     <button class="btn-mode" id="btnSpoof" title="Spoof mode - randomize fingerprinting">🎭</button>

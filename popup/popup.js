@@ -18,7 +18,7 @@
 //      - Scope: per-site (current hostname) or global (all sites).
 //      - Persisted via chrome.storage.local keys "tg_mode_global" and
 //        "tg_mode_sites" (object mapping hostname -> mode).
-//      - Mode pushed to content script via chrome.scripting.executeScript()
+//      - Mode pushed to content script via chrome.tabs.sendMessage()
 //        which sets the data-tg-mode attribute on document.documentElement.
 //
 //   3. DATA RETRIEVAL
@@ -168,11 +168,9 @@ function setMode(mode) {
   try {
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
       if (tabs[0]) {
-        chrome.scripting.executeScript({
-          target: { tabId: tabs[0].id },
-          func: function(m) { document.documentElement.setAttribute('data-tg-mode', m); },
-          args: [mode]
-        }).catch(function(){});
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'setMode', mode: mode }, function() {
+          void chrome.runtime.lastError;
+        });
       }
     });
   } catch(e) {}
