@@ -1681,30 +1681,22 @@
   }
 
   // ── CONSOLE MESSAGE CAPTURE (urlscan.io data.console) ──
-  // Capture console output for forensic analysis
+  // Non-intrusive approach: capture errors without monkey-patching console
+  // methods. Monkey-patching console adds injected.js to EVERY stack trace
+  // on every page, polluting dev tools and confusing analysts.
   var consoleMsgs = [];
-  ['log', 'warn', 'error', 'debug', 'info'].forEach(function(method) {
-    var orig = console[method];
-    if (orig) {
-      console[method] = function() {
-        try {
-          var msg = Array.from(arguments).map(function(a) {
-            if (typeof a === 'string') return a;
-            try { return JSON.stringify(a); } catch(e) { return String(a); }
-          }).join(' ');
-          if (msg.length > 0 && consoleMsgs.length < 200) {
-            consoleMsgs.push({ method: method, message: msg.substring(0, 500), timestamp: Date.now() });
-            // Send batch every 50 messages
-            if (consoleMsgs.length % 50 === 0) {
-              window.postMessage({ type: '__FPG_CONSOLE__', payload: consoleMsgs.slice() }, '*');
-            }
-          }
-        } catch(e) {}
-        return orig.apply(this, arguments);
-      };
+  window.addEventListener('error', function(e) {
+    if (consoleMsgs.length < 200) {
+      consoleMsgs.push({ method: 'error', message: (e.message || '') + (e.filename ? ' at ' + e.filename + ':' + e.lineno : ''), timestamp: Date.now() });
     }
   });
-  // Final flush after page load
+  window.addEventListener('unhandledrejection', function(e) {
+    if (consoleMsgs.length < 200) {
+      var msg = e.reason ? (e.reason.message || String(e.reason)).substring(0, 500) : 'unhandled rejection';
+      consoleMsgs.push({ method: 'error', message: msg, timestamp: Date.now() });
+    }
+  });
+  // Flush captured errors after page load
   setTimeout(function() {
     if (consoleMsgs.length > 0) {
       window.postMessage({ type: '__FPG_CONSOLE__', payload: consoleMsgs.slice() }, '*');
