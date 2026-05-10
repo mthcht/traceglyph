@@ -52,7 +52,8 @@ One-click export of domains, IPs, domain→IP map, redirect chains, trackers, sc
 ## Install
 
 ### From Chrome Web Store
-*(publication in progress)*
+
+https://chromewebstore.google.com/detail/traceglyph-by-mthcht/kigmpggalbjkdhcejfllcnjnpccoaebh
 
 ### From source
 ```bash
